@@ -23,6 +23,46 @@
 hs_err_pid*
 replay_pid*
 
+# YOLO/ML Cache files
+*.cache
+**/labels.cache
+
+# Node.js
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Maven Wrapper
+mvnw
+mvnw.cmd
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment variables (additional patterns)
+.env.local
+.env.development
+.env.production
+.env.test
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Project specific
 In21-EN3350-Project Outline.md
 SDP/*
 additional/*
