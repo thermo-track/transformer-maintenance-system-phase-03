@@ -26,92 +26,88 @@ The **Transformer Maintenance System (TMS)** helps operators and technical offic
 - **Latest Inspection Dashboard**: Dedicated page showing the most recent inspection record for each transformer
 - **Historical Tracking**: Maintain complete inspection history for each transformer
 
-### Thermal Image Upload & Management
-- **Baseline Image Storage**: Upload and manage baseline thermal images for different weather conditions (sunny, rainy, cloudy weather conditions)
-- **Inspection Images**: Upload, edit, view, and delete inspection images for periodic checks
-- Each image is tagged with:
-  - Environmental condition (Sunny, Cloudy, Rainy)
-  - Metadata: upload date/time, uploader
-- **Comparison Window**: View inspection images alongside baseline images depending on weather conditions
+## 🟣 Phase 2: Automated Anomaly Detection
 
-### Map Integration
-- **Location Management**: Add transformer locations using interactive map interface
-- **Google Maps Integration**:
-  - View individual transformers on map
-  - Get directions to transformer locations through Google Maps
-  - Overview map showing all transformers for quick reference
+In Phase 2 we added an AI-based engine and utilities to automatically detect thermal anomalies by comparing new (maintenance) thermal images with baseline images. The implementation lives primarily in the `phase2_fault_type/` folder and is designed to be modular so it can be integrated with the web application.
 
-### Search and Filtering
-- **Transformer Filtering**: Multiple filter options for efficient transformer list management
-- **Inspection Filtering**: Dedicated filtering mechanisms for inspection records
-- **Quick Search**: Fast access to specific records and data
+### Overview
 
-### Sliding Panel
-- **Efficient Navigation**: Streamlined sliding panel interface for seamless page transitions
+The Phase 2 pipeline compares baseline and maintenance image pairs using an unsupervised image-difference method, runs a YOLO detector on the maintenance image to identify fault types, and fuses both outputs (IoU-based) so anomaly regions can be labeled with a fault type and confidence. Visual overlays and JSON outputs are produced for downstream display in the frontend.
 
-### System Architecture
+### Functionality
 
-#### Frontend
-- **React Framework**: Responsive, modern React application
-- **Interactive UI**: Intuitive interface for all management tasks
+- AI-Based Anomaly Detection Engine
+  - Compares maintenance images with baseline images of the same transformer using image registration, histogram matching, and a fused difference map (AbsDiff + (1 − SSIM)).
+  - Detects thermal anomalies such as hotspots, asymmetries, and changes in hotspot locations.
+  - Thresholding mechanism is supported (percentile-based or fixed) to flag anomaly regions.
 
-#### Backend
-- **Spring Boot API**: RESTful API architecture
-- **Comprehensive Endpoints**: Full API coverage for transformers, inspections, and image management
-- **Scalable Design**: Built for performance and scalability
+- Side-by-Side Image Comparison View (Frontend)
+  - The pipeline produces overlay visualizations (PNG) and structured JSON that can be consumed by the frontend to render side-by-side comparisons with zoom/pan controls and highlighted anomaly regions (bounding boxes, heatmaps, or masks).
 
-#### Data Storage
-- **PostgreSQL Database**: Robust relational database for all metadata storage
-- **Cloudinary Integration**: Efficient cloud-based image storage and retrieval
+- Automatic Anomaly Marking
+  - When anomalies are detected the pipeline annotates regions with color-coded overlays and exports metadata including pixel coordinates, region area/score, and a fused `fault_confidence` when a YOLO detection matches the region.
+  - A confidence field is included for detections below thresholds so uncertain cases can be flagged for human review.
 
-#### Key Integrations
-- **Google Maps API**: Location services and mapping functionality
-- **Cloudinary CDN**: Advanced image management and delivery
+### Quick start (single pair)
 
-## ⚡ Setup Instructions
+1) Install Python dependencies (recommended in a venv) from the pipeline requirements:
 
-### 🔑 Prerequisites
+```powershell
+pip install -r phase2_fault_type\requirements.txt
+```
 
-- [Node.js](https://nodejs.org/) (for frontend)
-- [Java 21](https://www.oracle.com/java/technologies/downloads/#java21) (for backend)
-- [PostgreSQL](https://www.postgresql.org/) (database)
-- [Git](https://git-scm.com/) (for cloning)
+2) Ensure a YOLO weights file is present (or use the existing `phase2_fault_type/weights/best.pt`).
+
+3) Run the model for inference pipeline for a baseline/maintenance pair:
+
+```
+python phase2_fault_type/api/inference_api.py`
+```
+
+Outputs will include a fused JSON containing unsupervised regions enriched with `fault_type`, `fault_confidence`, and IoU metrics, and an optional overlay PNG visualizing anomalies and labels.
+
+### Deliverables & Notes
+
+- The `phase2_fault_type/` module has been integrated with the frontend so the web UI can show side-by-side images with overlays, zoom/pan, and metadata panels.
+- Performance: The pipeline runs on CPU by default and will use CUDA if available through Ultralytics. There are flags and parameters to tune inference and thresholding speed/quality.
+- Storage: Save pipeline JSON outputs to a backend storage endpoint for later retrieval and user feedback.
+
+
+## � Getting Started
+
+### Prerequisites
+- **Java 21** or higher
+- **Node.js 18+** and npm
+- **PostgreSQL 15+**
+- **Maven 3.8+**
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/thermo-track/transformer-maintenance-system.git
-cd transformer-maintenance-system
+git clone <repository-url>
+cd transformer-maintenance-system-phase-02
 ```
 
-### 2. Environment Variables
+### 2. Database Setup
 
-**Backend (`.env`)**
-```env
-# Database configuration
-DB_URL=jdbc:postgresql://localhost:<port>/<database_name>
-DB_USERNAME=<postgres_username>
-DB_PASSWORD=<postgres_password>
+```sql
+CREATE DATABASE tms_db;
 ```
 
-**Frontend (`.env`)**
-```env
-# Cloudinary configuration
-VITE_CLOUDINARY_CLOUD_NAME=<your_cloudinary_cloud_name>
-VITE_CLOUDINARY_UPLOAD_PRESET=<your_cloudinary_upload_preset>
-
-# Backend API endpoint
-VITE_BACKEND_API_URL=http://localhost:8080/api
+Update `tms-backend-application/src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/tms_db
+spring.datasource.username=your_username
+spring.datasource.password=your_password
 ```
 
 ### 3. Backend Setup
 
 ```bash
 cd tms-backend-application
+mvn clean install
 mvn spring-boot:run
 ```
-
-*Note: Ensure PostgreSQL is running and the database is created before starting the backend.*
 
 ### 4. Frontend Setup
 
@@ -186,8 +182,6 @@ npm run build
 ## 🚧 Current Limitations
 
 - **Authentication & Authorization**: No user accounts, roles, or access control (all operations are unrestricted)
-- **AI Thermal Analysis**: Automated anomaly detection not yet integrated (images stored only)
-- **Data Validation**: Limited server-side validation for some numeric and domain-specific fields
 - **Security Hardening**: No rate limiting, content security policy, or request size constraints configured
 - **Deployment**: No IaC scripts (Terraform/Docker Compose) provided
 - **Mobile Optimization**: Layout not fully optimized for narrow devices
