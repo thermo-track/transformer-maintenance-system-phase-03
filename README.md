@@ -68,9 +68,9 @@ Outputs will include a fused JSON containing unsupervised regions enriched with 
 
 ### Deliverables & Notes
 
-- The `phase2_fault_type/` module is intended to be integrated with the frontend so the web UI can show side-by-side images with overlays, zoom/pan, and metadata panels. The current repo includes the pipeline and demo outputs.
+- The `phase2_fault_type/` module has been integrated with the frontend so the web UI can show side-by-side images with overlays, zoom/pan, and metadata panels.
 - Performance: The pipeline runs on CPU by default and will use CUDA if available through Ultralytics. There are flags and parameters to tune inference and thresholding speed/quality.
-- Storage: Save pipeline JSON outputs to a backend storage endpoint for later retrieval and user feedback (for Phase 3 extension).
+- Storage: Save pipeline JSON outputs to a backend storage endpoint for later retrieval and user feedback.
 
 
 ## � Getting Started
